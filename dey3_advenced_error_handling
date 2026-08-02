@@ -1,0 +1,123 @@
+import requests
+import logging
+import time
+
+# ===== 1. تحضير Logging =====
+logging.basicConfig(
+    filename="app.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+# ===== 2. Custom Exceptions =====
+class APIError(Exception):
+    pass
+
+class NetworkError(Exception):
+    pass
+
+class TimeoutError(Exception):
+    pass
+
+# ===== 3. الدالة الرئيسية =====
+def fetch_and_monitor(url, timeout=5):
+    """
+    Fetches data from a URL and monitors the request.
+
+    Args:
+        url (str): the URL to fetch data from
+        timeout (int): the timeout for the request in seconds
+
+    Returns:
+        dict: the JSON response data
+    """
+    
+    for attempt in range(3):
+        try:
+            logging.info(f"Attempt {attempt + 1}: fetching data from {url}")
+            print(f"Attempt {attempt + 1}: fetching data from {url}")
+            
+            response = requests.get(url, timeout=timeout)
+            
+            if response.status_code == 200:
+                logging.info("✅ Success!")
+                print("✅ Success!")
+                return response.json()
+            else:
+                raise APIError(f"Status Code: {response.status_code}")
+        
+        except requests.Timeout:
+            logging.error(f"Attempt {attempt + 1} failed: Timeout")
+            print("❌ Timeout!")
+            
+            if attempt < 2:
+                print("Retry after 2 seconds...")
+                time.sleep(2)
+            else:
+                raise TimeoutError("Timeout after 3 attempts!")
+        
+        except requests.ConnectionError:
+            logging.error(f"Attempt {attempt + 1} failed: ConnectionError")
+            print("❌ No connection!")
+            
+            if attempt < 2:
+                print("Retry after 2 seconds...")
+                time.sleep(2)
+            else:
+                raise NetworkError("No connection after 3 attempts!")
+        
+        except APIError as e:
+            logging.error(f"Attempt {attempt + 1} failed: {e}")
+            print(f"❌ API Error: {e}")
+            
+            if attempt < 2:
+                print("Retry after 2 seconds...")
+                time.sleep(2)
+            else:
+                raise APIError(f"API error after 3 attempts!")
+        
+        except Exception as e:
+            logging.error(f"Attempt {attempt + 1} failed: {e}")
+            print(f"❌ Error: {e}")
+            
+            if attempt < 2:
+                print("Retry after 2 seconds...")
+                time.sleep(2)
+            else:
+                raise APIError(f"Error after 3 attempts!")
+
+# ===== 4. الاستخدام مع الإحصائيات =====
+if __name__ == "__main__":
+    
+    # متغيرات العد
+    success_count = 0
+    fail_count = 0
+    
+    try:
+        result = fetch_and_monitor("https://jsonplaceholder.typicode.com/users/1")
+        print(f"Data: {result}")
+        success_count += 1
+    
+    except APIError as e:
+        print(f"❌ API Error: {e}")
+        fail_count += 1
+    
+    except NetworkError as e:
+        print(f"❌ Network Error: {e}")
+        fail_count += 1
+    
+    except TimeoutError as e:
+        print(f"❌ Timeout Error: {e}")
+        fail_count += 1
+    
+    # ===== الإحصائيات =====
+    print("\n" + "=" * 50)
+    print("📊 Statistics")
+    print("=" * 50)
+    print(f"✅ Success: {success_count}")
+    print(f"❌ Failed: {fail_count}")
+    total = success_count + fail_count
+    if total > 0:
+        success_rate = (success_count / total) * 100
+        print(f"📈 Success Rate: {success_rate:.1f}%")
+    print("=" * 50)
