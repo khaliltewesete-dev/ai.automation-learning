@@ -1,0 +1,179 @@
+import sqlite3
+
+# ===== 1. دالة إنشاء قاعدة البيانات =====
+def create_database():
+    conn = sqlite3.connect("store_inventory.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            price REAL NOT NULL,
+            quantity INTEGER NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
+    print("✅ Database created successfully.")
+
+# ===== 2. دالة إضافة منتج =====
+def add_product(name, price, quantity):
+    conn = sqlite3.connect("store_inventory.db")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO products (name, price, quantity)
+            VALUES (?, ?, ?)
+        """, (name, price, quantity))
+        conn.commit()
+        print(f"✅ Product '{name}' added successfully")
+    except Exception as e:
+        print(f"❌ Error occurred while adding product: {e}")
+    finally:
+        conn.close()
+
+# ===== 3. دالة جلب جميع المنتجات =====
+def get_all_products():
+    conn = sqlite3.connect("store_inventory.db")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM products")
+        results = cursor.fetchall()
+        if not results:
+            print("❌ No Data Found")
+            return []
+        print("\n📋 All products in the database:")
+        print("=" * 80)
+        print(f"{'ID':<5} {'Product Name':<25} {'Price':<15} {'Quantity':<10}")
+        print("=" * 80)
+        for product in results:
+            id, name, price, quantity = product
+            print(f"{id:<5} {name:<25} ${price:<14} {quantity:<10}")
+        print("=" * 80)
+        return results
+    except Exception as e:
+        print(f"❌ Error occurred while retrieving products: {e}")
+        return []
+    finally:
+        conn.close()
+
+# ===== 4. دالة البحث عن منتج =====
+def search_product(name):
+    conn = sqlite3.connect("store_inventory.db")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM products WHERE name=?", (name,))
+        results = cursor.fetchall()
+        if results:
+            print(f"\n✅ Product found:")
+            for product in results:
+                id, prod_name, price, quantity = product
+                print(f"   ID: {id} | Name: {prod_name} | Price: ${price} | Quantity: {quantity}")
+            return results
+        else:
+            print(f"❌ No product found with name: {name}")
+            return None
+    except Exception as e:
+        print(f"❌ Error occurred while searching for product: {e}")
+        return None
+    finally:
+        conn.close()
+
+# ===== 5. دالة تحديث منتج =====
+def update_product(product_id, name, price, quantity):
+    conn = sqlite3.connect("store_inventory.db")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            UPDATE products
+            SET name=?, price=?, quantity=?
+            WHERE id=?
+        """, (name, price, quantity, product_id))
+        conn.commit()
+        if cursor.rowcount > 0:
+            print(f"✅ Product ID {product_id} updated successfully")
+        else:
+            print(f"❌ Product ID {product_id} not found")
+    except Exception as e:
+        print(f"❌ Error occurred while updating product: {e}")
+    finally:
+        conn.close()
+
+# ===== 6. دالة حذف منتج =====
+def delete_product(product_id):
+    conn = sqlite3.connect("store_inventory.db")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM products WHERE id=?", (product_id,))
+        conn.commit()
+        if cursor.rowcount > 0:
+            print(f"✅ Product ID {product_id} deleted successfully")
+        else:
+            print(f"❌ Product ID {product_id} not found")
+    except Exception as e:
+        print(f"❌ Error occurred while deleting product: {e}")
+    finally:
+        conn.close()
+
+# ===== 7. دالة الإحصائيات =====
+def get_statistics():
+    conn = sqlite3.connect("store_inventory.db")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT COUNT(*) FROM products")
+        count = cursor.fetchone()[0]
+        print(f"\n📊 Statistics:")
+        print(f"   Total number of products: {count}")
+    except Exception as e:
+        print(f"❌ Error occurred while retrieving statistics: {e}")
+    finally:
+        conn.close()
+
+# ===== 8. الاستخدام الرئيسي =====
+if __name__ == "__main__":
+    
+    print("🏪 Store Inventory Management System\n")
+    
+    # إنشاء قاعدة البيانات
+    create_database()
+    
+    # إضافة المنتجات
+    print("\n➕ Adding products to the database...")
+    add_product("Samsung 65 inch TV", 599.99, 8)
+    add_product("Sony Headphones", 149.99, 25)
+    add_product("Apple Watch Series 9", 399.99, 12)
+    add_product("Dell Laptop", 899.99, 5)
+    add_product("iPhone 15 Pro", 999.99, 15)
+    
+    # جلب جميع المنتجات
+    print("\n📖 Displaying all products...")
+    get_all_products()
+    
+    # البحث عن منتج
+    print("\n🔍 Searching for 'Sony Headphones'...")
+    search_product("Sony Headphones")
+    
+    # تحديث سعر Apple Watch
+    print("\n✏️ Updating Apple Watch Series 9 price from $399.99 to $349.99...")
+    update_product(3, "Apple Watch Series 9", 349.99, 12)
+    
+    # تحديث كمية Dell Laptop
+    print("\n✏️ Updating Dell Laptop quantity from 5 to 3...")
+    update_product(4, "Dell Laptop", 899.99, 3)
+    
+    # جلب المنتجات بعد التحديث
+    print("\n📖 Products after updates...")
+    get_all_products()
+    
+    # حذف منتج
+    print("\n🗑️ Deleting 'Sony Headphones' from inventory...")
+    delete_product(2)
+    
+    # جلب المنتجات بعد الحذف
+    print("\n📖 Final inventory...")
+    get_all_products()
+    
+    # الإحصائيات
+    get_statistics()
+    
+    print("\n✨ Store Inventory Management System - Complete")
