@@ -1,0 +1,207 @@
+import csv
+import os
+
+# ===== 1. دالة إنشاء قاعدة البيانات =====
+def create_database():
+    """إنشاء ملف CSV بالبيانات الأولية"""
+    data = [
+        ["id", "product", "price", "quantity", "date"],
+        ["1", "Laptop", "1500.00", "2", "2026-08-01"],
+        ["2", "Mouse", "25.50", "5", "2026-08-02"],
+        ["3", "Keyboard", "75.99", "3", "2026-08-03"],
+        ["4", "Monitor", "299.99", "1", "2026-08-04"],
+        ["5", "Headphones", "149.99", "4", "2026-08-05"]
+    ]
+    
+    with open("sales_data.csv", "w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+    
+    print("✅ Database created!")
+
+# ===== 2. دالة قراءة CSV =====
+def read_csv(filename):
+    """قراءة ملف CSV"""
+    try:
+        if not os.path.exists(filename):
+            print(f"❌ File '{filename}' not found")
+            return []
+        
+        with open(filename, 'r', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            data = list(reader)
+        
+        if not data:
+            print(f"❌ No data found")
+            return []
+        
+        print(f"\n📋 Data from '{filename}':")
+        print("=" * 90)
+        
+        headers = list(data[0].keys())
+        for header in headers:
+            print(f"{header:<20}", end="")
+        print()
+        print("=" * 90)
+        
+        for product in data:
+            for header in headers:
+                print(f"{product[header]:<20}", end="")
+            print()
+        
+        print("=" * 90)
+        return data
+    
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return []
+
+# ===== 3. دالة حساب المبيعات =====
+def calculate_total_sales(filename):
+    """حساب إجمالي المبيعات"""
+    try:
+        data = read_csv(filename)
+        
+        if not data:
+            return 0
+        
+        total = 0
+        print(f"\n💰 Sales Calculation:")
+        print("=" * 60)
+        
+        for product in data:
+            price = float(product['price'])
+            quantity = int(product['quantity'])
+            product_total = price * quantity
+            total += product_total
+            print(f"{product['product']:<20} | ${price:<10} x {quantity:<3} = ${product_total:<10}")
+        
+        print("=" * 60)
+        print(f"Total Sales: ${total:.2f}")
+        print("=" * 60)
+        
+        return total
+    
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return 0
+
+# ===== 4. دالة تصفية المنتجات =====
+def filter_expensive_products(filename, min_price):
+    """جلب المنتجات الغالية"""
+    try:
+        data = read_csv(filename)
+        
+        if not data:
+            return []
+        
+        expensive = []
+        print(f"\n🔍 Products with price > ${min_price}:")
+        print("=" * 70)
+        
+        for product in data:
+            price = float(product['price'])
+            if price > min_price:
+                expensive.append(product)
+                print(f"ID: {product['id']} | {product['product']:<20} | Price: ${price:<10} | Qty: {product['quantity']}")
+        
+        print("=" * 70)
+        
+        if not expensive:
+            print(f"❌ No products found")
+            return []
+        
+        return expensive
+    
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return []
+
+# ===== 5. دالة كتابة ملف جديد =====
+def write_summary_csv(filename, output_filename):
+    """كتابة ملف جديد مع عمود total_sales"""
+    try:
+        data = read_csv(filename)
+        
+        if not data:
+            return False
+        
+        # إضافة عمود total_sales
+        for row in data:
+            price = float(row['price'])
+            quantity = int(row['quantity'])
+            row['total_sales'] = price * quantity
+        
+        # كتابة الملف الجديد
+        headers = list(data[0].keys())
+        
+        with open(output_filename, 'w', newline='', encoding='utf-8') as file:
+            writer = csv.DictWriter(file, fieldnames=headers)
+            writer.writeheader()
+            writer.writerows(data)
+        
+        print(f"\n✅ Summary CSV created: '{output_filename}'")
+        return True
+    
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return False
+
+# ===== 6. دالة الإحصائيات =====
+def get_statistics(filename):
+    """حساب الإحصائيات"""
+    try:
+        data = read_csv(filename)
+        
+        if not data:
+            return
+        
+        prices = [float(p['price']) for p in data]
+        quantities = [int(p['quantity']) for p in data]
+        total_sales = [float(p['price']) * int(p['quantity']) for p in data]
+        
+        print(f"\n📊 Statistics:")
+        print("=" * 60)
+        print(f"Total products: {len(data)}")
+        print(f"Average price: ${sum(prices) / len(prices):.2f}")
+        print(f"Highest price: ${max(prices):.2f}")
+        print(f"Lowest price: ${min(prices):.2f}")
+        print(f"Total quantity: {sum(quantities)}")
+        print(f"Total sales: ${sum(total_sales):.2f}")
+        print("=" * 60)
+    
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+# ===== 7. الاستخدام الرئيسي =====
+if __name__ == "__main__":
+    
+    print("🏪 Store Sales Data Processing\n")
+    
+    filename = "sales_data.csv"
+    output_filename = "sales_summary.csv"
+    
+    # إنشاء قاعدة البيانات
+    create_database()
+    
+    # 1. قراءة البيانات
+    print("\n1️⃣ Reading sales_data.csv...")
+    read_csv(filename)
+    
+    # 2. حساب المبيعات
+    print("\n2️⃣ Calculating total sales...")
+    calculate_total_sales(filename)
+    
+    # 3. تصفية المنتجات الغالية
+    print("\n3️⃣ Filtering expensive products (price > $100)...")
+    filter_expensive_products(filename, 100)
+    
+    # 4. كتابة ملف جديد
+    print("\n4️⃣ Creating summary CSV...")
+    write_summary_csv(filename, output_filename)
+    
+    # 5. الإحصائيات
+    print("\n5️⃣ Getting statistics...")
+    get_statistics(filename)
+    
+    print("\n✨ Store Sales Data Processing Complete")
